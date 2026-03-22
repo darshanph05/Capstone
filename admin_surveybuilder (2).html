@@ -1,0 +1,648 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Survey Builder Dashboard</title>
+	<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+
+    <link rel="stylesheet" href="dashboard.css">
+	
+	
+	<style> 
+.topbar { height: 60px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 20px; gap: 12px; flex-shrink: 0; z-index: 100; }
+.logo-mark { width: 30px; height: 30px; background: var(--accent); border-radius: 7px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.logo-mark svg { width: 16px; height: 16px; }
+.logo-text { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 15px; color: var(--text-1); }
+.logo-text span { color: var(--accent); }
+.breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-2); margin-left: 8px; }
+.breadcrumb-sep { color: var(--text-3); }
+.breadcrumb-current { color: var(--text-1); font-weight: 500; }
+.survey-title-input { flex: 1; text-align: center; font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; color: var(--text-1); border: none; background: transparent; outline: none; padding: 4px 12px; border-radius: 6px; transition: background 0.15s; cursor: pointer; }
+.survey-title-input:hover { background: var(--bg); }
+.survey-title-input:focus { background: var(--bg); cursor: text; }
+.top-tabs { display: flex; gap: 2px; background: var(--bg); border-radius: 8px; padding: 3px; }
+.top-tab { padding: 5px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; color: var(--text-2); cursor: pointer; transition: all 0.15s; user-select: none; }
+.top-tab.active { background: var(--surface); color: var(--text-1); box-shadow: var(--shadow-sm); }
+.top-tab:hover:not(.active) { color: var(--text-1); }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 16px; border-radius: 7px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; border: none; transition: all 0.15s; white-space: nowrap; }
+.btn-primary { background: var(--accent); color: black; }
+.btn-primary:hover { background: var(--accent-hover); box-shadow: 0 4px 12px rgba(26,86,219,0.3); transform: translateY(-1px); }
+.btn-ghost { background: transparent; color: var(--text-2); border: 1px solid var(--border); }
+.btn-ghost:hover { background: var(--bg); color: var(--text-1); }
+.save-indicator { font-size: 12px; color: var(--green); display: flex; align-items: center; gap: 5px; transition: opacity 0.4s; }
+
+
+
+<!------------------ center panel ------------------------->
+
+.center-panel { flex: 1; overflow-y: auto; padding: 28px 24px; display: flex; flex-direction: column; align-items: center; }
+.center-panel::-webkit-scrollbar { width: 6px; }
+.center-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+.canvas-header { width: 100%; max-width: 800px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r) var(--r) 0 0; padding: 24px 28px; }
+.canvas-survey-name { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; color: var(--text-1); outline: none; border: none; background: transparent; width: 100%;text-align: center }
+.canvas-survey-name:focus { outline: 2px dashed var(--accent); outline-offset: 3px; border-radius: 4px; }
+.canvas-survey-desc { font-size: 14px; color: var(--text-2); outline: none; border: none; background: transparent; width: 100%; margin-top: 8px; line-height: 1.5; text-align: center }
+.canvas-survey-desc:focus { outline: 2px dashed var(--border); outline-offset: 3px; border-radius: 4px; }
+.questions-list { width: 100%; max-width: 700px; display: flex; flex-direction: column; }
+
+
+
+
+/* Question Card */
+.q-card { background: var(--surface); border: 1px solid var(--border); border-top: none; padding: 20px 28px; position: relative; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; animation: fadeSlideIn 0.25s ease both; }
+@keyframes fadeSlideIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+.q-card:last-child { border-radius: 0 0 var(--r) var(--r); }
+.q-card.active { border-left: 3px solid var(--accent); box-shadow: inset 0 0 0 1px #c7d7fd; z-index: 2; }
+.q-card:hover:not(.active) { background: #fafaf9; }
+.q-card-inner { display: flex; gap: 12px; align-items: flex-start; }
+.q-drag-handle { width: 20px; flex-shrink: 0; padding-top: 4px; color: var(--text-3); cursor: grab; display: flex; flex-direction: column; gap: 3px; align-items: center; opacity: 0; transition: opacity 0.15s; }
+.q-card:hover .q-drag-handle, .q-card.active .q-drag-handle { opacity: 1; }
+.drag-dot { width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
+.drag-row { display: flex; gap: 3px; }
+.q-content { flex: 1; min-width: 0; }
+.q-number { font-size: 11px; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 6px; }
+.q-required { color: #ef4444; margin-left: 3px; }
+
+/* Question image */
+.q-image-wrap { position: relative; margin-bottom: 12px; }
+.q-image-preview { width: 100%; max-height: 220px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); display: block; }
+.q-image-caption { font-size: 11.5px; color: var(--text-3); font-style: italic; margin-top: 5px; text-align: center; }
+.q-image-remove { position: absolute; top: 7px; right: 7px; width: 26px; height: 26px; border-radius: 50%; background: rgba(0,0,0,0.55); border: none; color: white; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
+.q-image-remove:hover { background: rgba(180,35,24,0.9); }
+
+.q-text-input { width: 100%; font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; color: var(--text-1); border: none; background: transparent; outline: none; line-height: 1.35; }
+.q-text-input::placeholder { color: var(--text-3); font-weight: 600; }
+.q-text-input:focus { outline: 2px dashed var(--accent); outline-offset: 2px; border-radius: 4px; }
+.q-desc-input { width: 100%; font-size: 13px; color: var(--text-2); border: none; background: transparent; outline: none; margin-top: 6px; font-family: 'DM Sans', sans-serif; }
+.q-desc-input::placeholder { color: var(--text-3); }
+.q-desc-input:focus { outline: 2px dashed var(--border); outline-offset: 2px; border-radius: 4px; }
+.q-answer-zone { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
+
+/* Option rows (MC / Checkbox) */
+.option-row { display: flex; align-items: center; gap: 9px; }
+.option-marker { width: 18px; height: 18px; border: 2px solid var(--border); border-radius: 50%; flex-shrink: 0; background: var(--surface); }
+.option-marker.square { border-radius: 4px; }
+
+/* Option image thumbnail */
+.opt-img-thumb { width: 42px; height: 42px; border-radius: 6px; object-fit: cover; border: 1px solid var(--border); flex-shrink: 0; cursor: pointer; transition: opacity 0.15s; }
+.opt-img-thumb:hover { opacity: 0.8; }
+
+/* Option image placeholder (upload trigger) */
+.opt-img-placeholder { width: 42px; height: 42px; border-radius: 6px; border: 1.5px dashed var(--border); background: var(--surface-2); display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; flex-shrink: 0; transition: all 0.15s; position: relative; overflow: hidden; }
+.opt-img-placeholder:hover { border-color: var(--accent); background: var(--accent-light); }
+.opt-img-placeholder input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+
+.option-input { flex: 1; border: none; border-bottom: 1px dashed var(--border); padding: 3px 0; font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--text-1); background: transparent; outline: none; transition: border-color 0.15s; min-width: 40px; }
+.option-input:focus { border-color: var(--accent); }
+.option-input::placeholder { color: var(--text-3); }
+.option-del { width: 22px; height: 22px; border-radius: 5px; border: none; background: transparent; cursor: pointer; color: var(--text-3); display: flex; align-items: center; justify-content: center; transition: all 0.12s; opacity: 0; flex-shrink: 0; }
+.option-row:hover .option-del { opacity: 1; }
+.option-del:hover { background: #fee2e2; color: var(--red); }
+
+/* Image Choice grid */
+.img-choice-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px,1fr)); gap: 10px; }
+.img-choice-card { border: 1.5px solid var(--border); border-radius: 9px; overflow: hidden; transition: border-color 0.15s; background: var(--surface-2); }
+.img-choice-card:hover { border-color: #c7d7fd; }
+.ic-img-zone { width: 100%; height: 100px; display: flex; align-items: center; justify-content: center; font-size: 28px; position: relative; overflow: hidden; background: var(--surface-2); }
+.ic-img-zone img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ic-upload-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: transparent; cursor: pointer; }
+.ic-upload-overlay input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.ic-hover-hint { position: absolute; inset: 0; background: rgba(26,86,219,0.12); display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.15s; font-size: 20px; pointer-events: none; }
+.ic-img-zone:hover .ic-hover-hint { opacity: 1; }
+.ic-label-wrap { padding: 7px 8px; display: flex; align-items: center; gap: 6px; border-top: 1px solid var(--border); }
+.ic-label-input { flex: 1; border: none; background: transparent; font-size: 12.5px; font-family: 'DM Sans', sans-serif; color: var(--text-1); outline: none; min-width: 0; }
+.ic-label-input::placeholder { color: var(--text-3); }
+.ic-remove { width: 20px; height: 20px; border-radius: 50%; border: none; background: var(--bg); color: var(--text-3); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 11px; transition: all 0.15s; flex-shrink: 0; }
+.ic-remove:hover { background: #fee2e2; color: var(--red); }
+
+.add-option-btn { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--accent); cursor: pointer; padding: 5px 0; background: none; border: none; font-family: 'DM Sans', sans-serif; font-weight: 500; transition: opacity 0.15s; align-self: flex-start; }
+.add-option-btn:hover { opacity: 0.75; }
+
+/* Other answer types */
+.scale-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.scale-item { width: 40px; height: 40px; border-radius: 8px; border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; color: var(--text-2); cursor: pointer; transition: all 0.15s; user-select: none; }
+.scale-item:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+.scale-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-3); margin-top: 6px; }
+.text-answer-preview { border: 1.5px dashed var(--border); border-radius: 7px; padding: 12px 14px; font-size: 13.5px; color: var(--text-3); background: var(--surface-2); font-style: italic; }
+.text-answer-preview.long { min-height: 80px; }
+.stars-row { display: flex; gap: 8px; }
+.star { font-size: 26px; cursor: pointer; color: var(--text-3); transition: color 0.12s, transform 0.12s; }
+.star.filled { color: #f59e0b; }
+.star:hover { transform: scale(1.2); color: #f59e0b; }
+.dropdown-preview { border: 1.5px solid var(--border); border-radius: 7px; padding: 10px 14px; font-size: 13.5px; color: var(--text-3); display: flex; justify-content: space-between; align-items: center; background: var(--surface); }
+.date-preview { display: flex; gap: 8px; }
+.date-field { border: 1.5px solid var(--border); border-radius: 7px; padding: 9px 14px; font-size: 13.5px; color: var(--text-3); background: var(--surface); min-width: 90px; text-align: center; }
+.matrix-table { width: 100%; border-collapse: collapse; }
+.matrix-table th, .matrix-table td { border: 1px solid var(--border); padding: 8px 12px; font-size: 13px; text-align: center; }
+.matrix-table th { background: var(--surface-2); font-weight: 600; color: var(--text-2); }
+.matrix-table td:first-child { text-align: left; color: var(--text-1); }
+
+/* Toolbar */
+.q-toolbar { display: flex; align-items: center; gap: 6px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); opacity: 0; transition: opacity 0.15s; pointer-events: none; flex-wrap: wrap; }
+.q-card.active .q-toolbar { opacity: 1; pointer-events: all; }
+.toolbar-btn { display: flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 6px; border: 1px solid var(--border); font-family: 'DM Sans', sans-serif; font-size: 12px; color: var(--text-2); background: var(--surface); cursor: pointer; transition: all 0.13s; }
+.toolbar-btn:hover { background: var(--bg); color: var(--text-1); }
+.toolbar-btn.danger:hover { background: #fee2e2; color: var(--red); border-color: #fecaca; }
+.toolbar-btn.has-img { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+.toolbar-toggle { display: flex; align-items: center; gap: 6px; margin-left: auto; font-size: 12px; color: var(--text-2); }
+.toggle-switch { width: 32px; height: 18px; border-radius: 99px; background: var(--border); position: relative; cursor: pointer; transition: background 0.2s; flex-shrink: 0; border: none; }
+.toggle-switch.on { background: var(--accent); }
+.toggle-switch::after { content: ''; position: absolute; width: 14px; height: 14px; border-radius: 50%; background: white; top: 2px; left: 2px; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+.toggle-switch.on::after { transform: translateX(14px); }
+
+.add-q-bar { width: 100%; max-width: 700px; display: flex; align-items: center; gap: 10px; padding: 12px 0; }
+.add-q-line { flex: 1; height: 1px; background: var(--border); }
+.add-q-btn { display: flex; align-items: center; gap: 7px; padding: 8px 18px; border-radius: 99px; background: var(--surface); border: 1.5px dashed var(--border); font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; color: var(--text-2); cursor: pointer; transition: all 0.15s; }
+.add-q-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+
+<!--------------------------------------------- RIGHT PANEL ------------------------------------------>
+
+
+/* RIGHT */
+.right-panel { width: var(--right-w); background: var(--surface); border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0; }
+.right-tabs { display: flex; border-bottom: 1px solid var(--border); }
+.right-tab { flex: 1; padding: 12px 8px; text-align: center; font-size: 12.5px; font-weight: 500; color: var(--text-2); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; user-select: none; }
+.right-tab.active { color: var(--accent); border-color: var(--accent); }
+.right-tab:hover:not(.active) { color: var(--text-1); background: var(--bg); }
+.right-content { flex: 1; overflow-y: auto; padding: 16px; }
+.right-content::-webkit-scrollbar { width: 4px; }
+.right-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+.settings-section { margin-bottom: 20px; }
+.settings-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3); margin-bottom: 10px; display: block; }
+.settings-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--border); }
+.settings-row:last-child { border-bottom: none; }
+.settings-row-label { font-size: 13px; color: var(--text-2); }
+.settings-select { border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; font-family: 'DM Sans', sans-serif; font-size: 12.5px; color: var(--text-1); background: var(--surface); outline: none; cursor: pointer; max-width: 130px; }
+.settings-select:focus { border-color: var(--accent); }
+.settings-input { border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; font-family: 'DM Sans', sans-serif; font-size: 12.5px; color: var(--text-1); background: var(--surface); outline: none; width: 70px; text-align: center; }
+.color-swatches { display: flex; gap: 6px; flex-wrap: wrap; }
+.swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.15s, border-color 0.15s; }
+.swatch:hover { transform: scale(1.2); }
+.swatch.selected { border-color: var(--text-1); }
+.progress-panel { padding: 8px 0; }
+.progress-item { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; font-size: 13px; color: var(--text-2); border-bottom: 1px solid var(--border); }
+.progress-item:last-child { border-bottom: none; }
+.progress-value { font-weight: 600; color: var(--text-1); font-family: 'Syne', sans-serif; }
+.progress-good { color: var(--green); }
+.logic-placeholder { background: var(--surface-2); border: 1.5px dashed var(--border); border-radius: 8px; padding: 24px 16px; text-align: center; color: var(--text-3); font-size: 13px; line-height: 1.5; }
+.logic-placeholder span { font-size: 26px; display: block; margin-bottom: 8px; }
+	
+	</style>
+</head>
+<body>
+	<header class="topbar">
+  <!-- <div class="logo-mark"> -->
+    <!-- <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" rx="2" fill="white"/><rect x="14" y="3" width="7" height="7" rx="2" fill="white" fill-opacity="0.6"/><rect x="3" y="14" width="7" height="7" rx="2" fill="white" fill-opacity="0.6"/><rect x="14" y="14" width="7" height="7" rx="2" fill="white" fill-opacity="0.3"/></svg> -->
+  <!-- </div> -->
+  <span class="logo-text">CASE </span>
+  <div class="breadcrumb">
+    <span>Projects</span><span class="breadcrumb-sep">/</span>
+    <span class="breadcrumb-current" id="bc-title">Untitled Survey</span>
+  </div>
+  <input class="survey-title-input" id="survey-title" value="Untitled Survey" oninput="syncTitle(this.value)"/>
+  <div class="top-tabs">
+    <!-- <div class="top-tab active" onclick="setTopTab(this,'builder')">Builder</div> -->
+    <!-- <div class="top-tab" onclick="setTopTab(this,'flow')">Flow</div> -->
+    <!-- <div class="top-tab" onclick="setTopTab(this,'style')">Style</div> -->
+  </div>
+  <!-- <div class="save-indicator" id="save-ind" style="opacity:0"> -->
+    <!-- <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> -->
+    <!-- Saved -->
+  <!-- </div> -->
+  <!-- <button class="btn btn-ghost" onclick="openPreview()"> -->
+    <!-- <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> -->
+    <!-- Preview -->
+  <!-- </button> -->
+  <!-- <button class="btn btn-primary" onclick="publishSurvey()"> -->
+    <!-- <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> -->
+    <!-- Publish -->
+  <!-- </button> -->
+	  <button class="btn btn-primary" onclick="openPreview()">
+		
+		<!-- <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> -->
+		<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+		  <path d="M18 8C18 6.4087 17.3679 4.88258 16.2426 3.75736C15.1174 2.63214 13.5913 2 12 2C10.4087 2 8.88258 2.63214 7.75736 3.75736C6.63214 4.88258 6 6.4087 6 8C6 15 3 17 3 17H21C21 17 18 15 18 8Z" 
+				stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+		  <path d="M10.3 21C10.7239 21.3921 11.2743 21.6045 11.8412 21.5947C12.4081 21.5849 12.9431 21.3537 13.3392 20.9475" 
+				stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+		</svg>
+
+	  </button>
+	  
+	  	<button class="btn btn-primary" onclick="openPreview()">
+		
+		<!-- <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> -->
+		<!-- <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"> -->
+		  <!-- <path d="M18 8C18 6.4087 17.3679 4.88258 16.2426 3.75736C15.1174 2.63214 13.5913 2 12 2C10.4087 2 8.88258 2.63214 7.75736 3.75736C6.63214 4.88258 6 6.4087 6 8C6 15 3 17 3 17H21C21 17 18 15 18 8Z"  -->
+				<!-- stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/> -->
+		  <!-- <path d="M10.3 21C10.7239 21.3921 11.2743 21.6045 11.8412 21.5947C12.4081 21.5849 12.9431 21.3537 13.3392 20.9475"  -->
+				<!-- stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/> -->
+		<!-- </svg> -->
+
+		<svg width="24" height="24" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+		  <circle cx="32" cy="32" r="32" fill="#0056D2"/>
+		  
+		  <path d="M42 22V36C42 41.5228 37.5228 46 32 46C26.4772 46 22 41.5228 22 36V22" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+		</svg>
+
+	  </button>  
+</header>
+	
+	
+	
+    <div class="top-nav">
+        <div class="nav-links">
+            <a href="survey.html" class="active" style="margin-left: 10px;">Survey</a>
+            <a href="distribution.html">Distributions</a>
+            <a href="dataanalysis.html">Data & Analysis</a>
+            <a href="results.html">Results</a>
+        </div>
+		<button class="btn btn-ghost" onclick="openPreview()">
+			<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+			Preview
+		</button>
+        <button class="btn-publish">Publish</button>
+    </div>
+
+    <div class="dashboard-container">
+        
+        <div class="sidebar">
+            <div class="sidebar-header">Edit question</div>
+            
+            <div class="sidebar-section">
+                <div class="sidebar-label">Question type</div>
+                <select id="q-type-selector" class="form-select" disabled onchange="changeQuestionType(this.value)">
+                    <option value="mcq">Multiple choice</option>
+                    <option value="image_mcq">Image choice (Blocks)</option>
+                    <option value="spatial">Arrow move (Spatial)</option>
+                </select>
+            </div>
+
+            <div class="sidebar-section" id="choices-section" style="opacity: 0.5;">
+                <div class="sidebar-label">Answer type</div>
+                <div style="font-size: 13px; color: #374151; margin-bottom: 12px; display: flex; align-items: center;">
+                    <input type="radio" name="ans_type" id="ans_single" value="single" disabled onchange="changeAnswerType('single')" style="margin-right: 8px;"> 
+                    <label for="ans_single">Allow one answer</label>
+                </div>
+                <div style="font-size: 13px; color: #374151; margin-bottom: 12px; display: flex; align-items: center;">
+                    <input type="radio" name="ans_type" id="ans_multiple" value="multiple" disabled onchange="changeAnswerType('multiple')" style="margin-right: 8px;"> 
+                    <label for="ans_multiple">Allow multiple answers</label>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <button id="btn-delete" class="btn-danger" disabled onclick="deleteSelectedQuestion()">
+                    Delete Question
+                </button>
+            </div>
+        </div>
+		
+		
+		
+		
+		
+		<!---------------------------------------------------- Center panel ---------------------------------------------------->
+
+		<div class="center-panel">
+			<div class="canvas-header">
+			  <input class="canvas-survey-name" id="canvas-title" value="Untitled Survey" oninput="syncFromCanvas(this.value)" placeholder="Survey title…"/>
+			  <input class="canvas-survey-desc" id="canvas-desc" value="Add a description to your survey (optional)" placeholder="Survey description…"/>
+			  <div class="questions-list" id="questions-list"></div>
+			  <div class="add-q-bar">
+				  <div class="add-q-line"></div>
+				  <button class="add-q-btn" onclick="addQuestion('mc')">
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+					Add Question
+				  </button>
+				  <div class="add-q-line"></div>
+				</div>
+			</div>
+		</div>
+		
+		
+
+
+
+        <!-- <div class="workspace"> -->
+            <!-- <div class="survey-canvas"> -->
+                <!-- <input type="text" id="main-survey-title" class="survey-title-input" placeholder="Untitled project" value="Student Semester 1 Quiz"> -->
+                
+                <!-- <div id="questions-container"></div> -->
+
+                <!-- <div style="margin-top: 24px; display: flex; justify-content: flex-end;"> -->
+                    <!-- <button class="btn-add-question" onclick="addQuestion()"> -->
+                        <!-- <span style="font-size: 18px;">+</span> Add new question -->
+                    <!-- </button> -->
+                <!-- </div> -->
+            <!-- </div> -->
+        <!-- </div> -->
+		
+		
+		
+		
+		<!-- <aside class="right-panel"> -->
+			<!-- <div class="right-tabs"> -->
+			  <!-- <div class="right-tab active" onclick="setRightTab(this,'question')">Question</div> -->
+			  <!-- <div class="right-tab" onclick="setRightTab(this,'survey')">Survey</div> -->
+			  <!-- <div class="right-tab" onclick="setRightTab(this,'logic')">Logic</div> -->
+			<!-- </div> -->
+			<!-- <div class="right-content" id="right-content"></div> -->
+		  <!-- </aside> -->
+		  
+		  
+</div>
+    </div>
+
+    <script>
+        <!-- let questions = []; -->
+        <!-- let activeQuestionId = null; -->
+
+        <!-- function addQuestion() { -->
+            <!-- const newId = Date.now(); -->
+            <!-- questions.push({ -->
+                <!-- id: newId, -->
+                <!-- type: 'mcq',  -->
+                <!-- answerType: 'single', // 'single' or 'multiple' -->
+                <!-- title: 'Click to write the question text' -->
+            <!-- }); -->
+            <!-- setActive(newId); -->
+        <!-- } -->
+
+        <!-- function setActive(id) { -->
+            <!-- // Only re-render if the active ID actually changes. -->
+            <!-- // This prevents losing focus when clicking inside an already active block. -->
+            <!-- if (activeQuestionId !== id) { -->
+                <!-- activeQuestionId = id; -->
+                <!-- renderQuestions(); -->
+            <!-- } -->
+            
+            <!-- // Update sidebar state regardless -->
+            <!-- const selector = document.getElementById('q-type-selector'); -->
+            <!-- const deleteBtn = document.getElementById('btn-delete'); -->
+            <!-- const choicesSec = document.getElementById('choices-section'); -->
+            <!-- const ansSingle = document.getElementById('ans_single'); -->
+            <!-- const ansMultiple = document.getElementById('ans_multiple'); -->
+            
+            <!-- if(id) { -->
+                <!-- const q = questions.find(q => q.id === id); -->
+                <!-- selector.value = q.type; -->
+                <!-- selector.disabled = false; -->
+                <!-- deleteBtn.disabled = false; -->
+                
+                <!-- // Show/enable answer types for MCQ and Image Choice -->
+                <!-- if (q.type === 'mcq' || q.type === 'image_mcq') { -->
+                    <!-- choicesSec.style.opacity = '1'; -->
+                    <!-- ansSingle.disabled = false; -->
+                    <!-- ansMultiple.disabled = false; -->
+                    <!-- ansSingle.checked = (q.answerType === 'single'); -->
+                    <!-- ansMultiple.checked = (q.answerType === 'multiple'); -->
+                <!-- } else { -->
+                    <!-- choicesSec.style.opacity = '0.5'; -->
+                    <!-- ansSingle.disabled = true; -->
+                    <!-- ansMultiple.disabled = true; -->
+                <!-- } -->
+            <!-- } else { -->
+                <!-- selector.disabled = true; -->
+                <!-- deleteBtn.disabled = true; -->
+                <!-- choicesSec.style.opacity = '0.5'; -->
+                <!-- ansSingle.disabled = true; -->
+                <!-- ansMultiple.disabled = true; -->
+            <!-- } -->
+        <!-- } -->
+
+        <!-- function changeQuestionType(newType) { -->
+            <!-- if(!activeQuestionId) return; -->
+            <!-- const q = questions.find(q => q.id === activeQuestionId); -->
+            <!-- q.type = newType; -->
+            <!-- activeQuestionId = null; // force re-render -->
+            <!-- setActive(q.id); -->
+        <!-- } -->
+
+        <!-- function changeAnswerType(ansType) { -->
+            <!-- if(!activeQuestionId) return; -->
+            <!-- const q = questions.find(q => q.id === activeQuestionId); -->
+            <!-- q.answerType = ansType; -->
+            <!-- activeQuestionId = null; // force re-render -->
+            <!-- setActive(q.id); -->
+        <!-- } -->
+
+        <!-- function deleteSelectedQuestion() { -->
+            <!-- if(!activeQuestionId) return; -->
+            <!-- questions = questions.filter(q => q.id !== activeQuestionId); -->
+            <!-- setActive(null); -->
+            <!-- renderQuestions(); -->
+        <!-- } -->
+
+        <!-- function triggerImageUpload(event, imgId, placeholderId) { -->
+            <!-- event.stopPropagation();  -->
+            <!-- const input = document.createElement('input'); -->
+            <!-- input.type = 'file'; -->
+            <!-- input.accept = 'image/*'; -->
+            <!-- input.onchange = e => { -->
+                <!-- const file = e.target.files[0]; -->
+                <!-- if(file) { -->
+                    <!-- const reader = new FileReader(); -->
+                    <!-- reader.onload = e => { -->
+                        <!-- document.getElementById(imgId).src = e.target.result; -->
+                        <!-- document.getElementById(imgId).style.display = 'block'; -->
+                        <!-- document.getElementById(placeholderId).style.display = 'none'; -->
+                    <!-- } -->
+                    <!-- reader.readAsDataURL(file); -->
+                <!-- } -->
+            <!-- }; -->
+            <!-- input.click(); -->
+        <!-- } -->
+
+        <!-- function renderQuestions() { -->
+            <!-- const container = document.getElementById('questions-container'); -->
+            <!-- container.innerHTML = ''; -->
+
+            <!-- questions.forEach((q, index) => { -->
+                <!-- const block = document.createElement('div'); -->
+                <!-- block.className = `question-block ${q.id === activeQuestionId ? 'active' : ''}`; -->
+                <!-- // Set active when clicking the block -->
+                <!-- block.onclick = () => setActive(q.id); -->
+
+                <!-- let innerHTML = ` -->
+                    <!-- <div class="q-header"> -->
+                        <!-- <div class="q-number">Q${index + 1}</div> -->
+                        <!-- <textarea class="q-title-input" rows="2" oninput="updateTitle(${q.id}, this.value)" onclick="event.stopPropagation()">${q.title}</textarea> -->
+                    <!-- </div> -->
+                <!-- `; -->
+
+                <!-- // Determine input type based on Answer Type selection -->
+                <!-- const inputType = q.answerType === 'multiple' ? 'checkbox' : 'radio'; -->
+
+                <!-- if (q.type === 'mcq') { -->
+                    <!-- innerHTML += ` -->
+                        <!-- <div class="mcq-option"><input type="${inputType}" disabled> <input type="text" value="Click to write Choice 1" onclick="event.stopPropagation()"></div> -->
+                        <!-- <div class="mcq-option"><input type="${inputType}" disabled> <input type="text" value="Click to write Choice 2" onclick="event.stopPropagation()"></div> -->
+                        <!-- <div class="mcq-option"><input type="${inputType}" disabled> <input type="text" value="Click to write Choice 3" onclick="event.stopPropagation()"></div> -->
+                    <!-- `; -->
+                <!-- } else if (q.type === 'image_mcq') { -->
+                    <!-- // New Layout: 1 Target on Left, 4 Options on Right -->
+                    <!-- innerHTML += ` -->
+                        <!-- <div class="image-mcq-container"> -->
+                            <!-- <div class="image-mcq-target"> -->
+                                <!-- <div class="image-upload-box" onclick="triggerImageUpload(event, 'img_tgt_${q.id}', 'ph_tgt_${q.id}')"> -->
+                                    <!-- <div id="ph_tgt_${q.id}">+ Target Object</div><img id="img_tgt_${q.id}" src=""> -->
+                                <!-- </div> -->
+                            <!-- </div> -->
+                            
+                            <!-- <div class="image-mcq-options"> -->
+                                <!-- <div class="image-mcq-opt-wrapper"> -->
+                                    <!-- <div class="image-upload-box" onclick="triggerImageUpload(event, 'img1_${q.id}', 'ph1_${q.id}')"> -->
+                                        <!-- <div id="ph1_${q.id}">+ Option</div><img id="img1_${q.id}" src=""> -->
+                                    <!-- </div> -->
+                                    <!-- <input type="${inputType}" class="opt-selector" disabled> -->
+                                <!-- </div> -->
+                                <!-- <div class="image-mcq-opt-wrapper"> -->
+                                    <!-- <div class="image-upload-box" onclick="triggerImageUpload(event, 'img2_${q.id}', 'ph2_${q.id}')"> -->
+                                        <!-- <div id="ph2_${q.id}">+ Option</div><img id="img2_${q.id}" src=""> -->
+                                    <!-- </div> -->
+                                    <!-- <input type="${inputType}" class="opt-selector" disabled> -->
+                                <!-- </div> -->
+                                <!-- <div class="image-mcq-opt-wrapper"> -->
+                                    <!-- <div class="image-upload-box" onclick="triggerImageUpload(event, 'img3_${q.id}', 'ph3_${q.id}')"> -->
+                                        <!-- <div id="ph3_${q.id}">+ Option</div><img id="img3_${q.id}" src=""> -->
+                                    <!-- </div> -->
+                                    <!-- <input type="${inputType}" class="opt-selector" disabled> -->
+                                <!-- </div> -->
+                                <!-- <div class="image-mcq-opt-wrapper"> -->
+                                    <!-- <div class="image-upload-box" onclick="triggerImageUpload(event, 'img4_${q.id}', 'ph4_${q.id}')"> -->
+                                        <!-- <div id="ph4_${q.id}">+ Option</div><img id="img4_${q.id}" src=""> -->
+                                    <!-- </div> -->
+                                    <!-- <input type="${inputType}" class="opt-selector" disabled> -->
+                                <!-- </div> -->
+                            <!-- </div> -->
+                        <!-- </div> -->
+                    <!-- `; -->
+                <!-- } else if (q.type === 'spatial') { -->
+                    <!-- innerHTML += ` -->
+                        <!-- <div class="spatial-placeholder"> -->
+                            <!-- <div class="spatial-left" onclick="triggerImageUpload(event, 'img_sp_${q.id}', 'ph_sp_${q.id}')"> -->
+                                <!-- <div id="ph_sp_${q.id}">+ Import Question Image</div> -->
+                                <!-- <img id="img_sp_${q.id}" src="" style="max-width:100%; max-height:100%; display:none;"> -->
+                            <!-- </div> -->
+                            <!-- <div class="spatial-right"><div class="circle-mockup"><div class="arrow-mockup"></div></div></div> -->
+                        <!-- </div> -->
+                    <!-- `; -->
+                <!-- } -->
+
+                <!-- block.innerHTML = innerHTML; -->
+                <!-- container.appendChild(block); -->
+            <!-- }); -->
+        <!-- } -->
+
+        <!-- function updateTitle(id, newTitle) { -->
+            <!-- const q = questions.find(q => q.id === id); -->
+            <!-- q.title = newTitle; -->
+        
+
+        // Initialize empty but ready
+        <!-- addQuestion(); -->
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		<!----------------------------------------------------- MATTY SCRIPTS ---------------------------------------------------------->4
+let questions = [];
+let activeQId = null;
+let qCounter = 0;
+let saveTimer = null;
+let activeRightTab = 'question';
+const defaultOptions = ['Option 1', 'Option 2', 'Option 3'];
+		
+		
+		
+window.onload = () => { addQuestion('mc', true); addQuestion('short', true); renderRightPanel(); };
+
+
+function syncTitle(v) { document.getElementById('bc-title').textContent = v||'Untitled'; document.getElementById('canvas-title').value = v; triggerSave(); }
+function syncFromCanvas(v) { document.getElementById('survey-title').value = v; document.getElementById('bc-title').textContent = v||'Untitled'; triggerSave(); }
+
+function addQuestion(type, silent=false) {
+  qCounter++;
+  const id = 'q_'+Date.now()+'_'+qCounter;
+  const q = { id, type, text:'', desc:'', required:false, questionImage:null, questionImageCaption:'', options:[], optionImages:[], cols:[], rows:[] };
+  if (['mc','checkbox','dropdown'].includes(type)) { q.options=[...defaultOptions]; q.optionImages=[null,null,null]; }
+  if (type==='imgchoice') { q.options=['Option 1','Option 2','Option 3','Option 4']; q.optionImages=[null,null,null,null]; }
+  if (type==='matrix') { q.rows=['Row 1','Row 2','Row 3']; q.cols=['Strongly Agree','Agree','Disagree','Strongly Disagree']; }
+  questions.push(q);
+  renderQuestion(q);
+  activateCard(id);
+  if (!silent) { scrollToQ(id); showToast('Question added'); triggerSave(); }
+}
+	
+	
+	
+function renderQuestion(q) {
+  const list = document.getElementById('questions-list');
+  const num = questions.indexOf(q)+1;
+  const div = document.createElement('div');
+  div.className = 'q-card';
+  div.id = 'card_'+q.id;
+  div.onclick = e => { if (!e.target.closest('.toolbar-btn,.toggle-switch,.option-del,.add-option-btn,.ic-remove,.opt-img-placeholder,.right-img-upload,.ic-upload-overlay,.q-image-remove')) activateCard(q.id); };
+  const imgBtnClass = q.questionImage ? ' has-img' : '';
+  div.innerHTML = `
+    <div class="q-card-inner">
+      <div class="q-drag-handle">
+        <div class="drag-row"><div class="drag-dot"></div><div class="drag-dot"></div></div>
+        <div class="drag-row"><div class="drag-dot"></div><div class="drag-dot"></div></div>
+        <div class="drag-row"><div class="drag-dot"></div><div class="drag-dot"></div></div>
+      </div>
+      <div class="q-content">
+        <div class="q-number" id="num_${q.id}">Q${num} · ${typeLabel(q.type)}<span class="q-required" id="req_${q.id}" style="${q.required?'':'display:none'}"> *</span></div>
+        <div id="qimg_${q.id}">${renderQImg(q)}</div>
+        <input class="q-text-input" id="text_${q.id}" value="${esc(q.text)}" placeholder="Type your question here…" oninput="updateQ('${q.id}','text',this.value)"/>
+        <input class="q-desc-input" id="desc_${q.id}" value="${esc(q.desc)}" placeholder="Description (optional)" oninput="updateQ('${q.id}','desc',this.value)"/>
+        <div class="q-answer-zone" id="zone_${q.id}">${renderAnswerZone(q)}</div>
+        <div class="q-toolbar">
+          <button class="toolbar-btn" onclick="duplicateQ('${q.id}')">⧉ Duplicate</button>
+          <button class="toolbar-btn" onclick="moveQ('${q.id}',-1)">↑ Up</button>
+          <button class="toolbar-btn" onclick="moveQ('${q.id}',1)">↓ Down</button>
+          <label class="toolbar-btn${imgBtnClass}" id="imgbtn_${q.id}" style="cursor:pointer;" title="Add image to question">
+            🖼 ${q.questionImage ? 'Change Image' : 'Add Image'}
+            <input type="file" accept="image/*" style="display:none" onchange="handleQImg('${q.id}',this)"/>
+          </label>
+          <button class="toolbar-btn danger" onclick="deleteQ('${q.id}')">🗑 Delete</button>
+          <div class="toolbar-toggle">Required <button class="toggle-switch ${q.required?'on':''}" id="tog_${q.id}" onclick="toggleRequired('${q.id}')"></button></div>
+        </div>
+      </div>
+    </div>`;
+  list.appendChild(div);
+}
+
+function activateCard(id) {
+
+  document.querySelectorAll('.q-card').forEach(c=>c.classList.remove('active'));
+  document.getElementById('card_'+id)?.classList.add('active');
+  activeQId = id; renderRightPanel();
+}
+function renderQImg(q) {
+  if (!q.questionImage) return '';
+  return `<div class="q-image-wrap">
+    <img class="q-image-preview" src="${q.questionImage}" alt=""/>
+    ${q.questionImageCaption ? `<div class="q-image-caption">${esc(q.questionImageCaption)}</div>` : ''}
+    <button class="q-image-remove" onclick="removeQImg('${q.id}')" title="Remove image">✕</button>
+  </div>`;
+}
+function updateQ(id, field, val) { const q=questions.find(q=>q.id===id); if(q){q[field]=val; triggerSave();} }
+function updateOption(qId,idx,val) { const q=questions.find(q=>q.id===qId); if(q){q.options[idx]=val; triggerSave();} }
+function addOption(qId) { const q=questions.find(q=>q.id===qId); if(!q) return; q.options.push('Option '+(q.options.length+1)); q.optionImages.push(null); refreshZone(q); triggerSave(); }
+function removeOption(qId,idx) { const q=questions.find(q=>q.id===qId); if(!q||q.options.length<=1){showToast('Need at least one option');return;} q.options.splice(idx,1); q.optionImages.splice(idx,1); refreshZone(q); triggerSave(); }
+function refreshZone(q) { const z=document.getElementById('zone_'+q.id); if(z) z.innerHTML=renderAnswerZone(q); }
+
+function typeLabel(t) { return {mc:'Multiple Choice',checkbox:'Checkboxes',imgchoice:'Image Choice',short:'Short Text',long:'Long Text',rating:'Star Rating',nps:'NPS',dropdown:'Dropdown',date:'Date',matrix:'Matrix',slider:'Slider',file:'File Upload',section:'Section'}[t]||t; }
+		
+    </script>
+</body>
+</html>
