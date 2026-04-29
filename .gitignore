@@ -1,0 +1,24 @@
+# Python
+venv/
+.venv/
+**/venv/
+**/.venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+
+# Env files
+.env
+.env.*
+**/.env
+**/.env.*
+
+# OS/editor junk
+.DS_Store
+**/.DS_Store
+.vscode/
+.idea/
+
+# Optional local data
+*.sqlite3
+*.db

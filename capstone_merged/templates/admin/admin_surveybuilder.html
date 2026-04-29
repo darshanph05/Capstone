@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Survey Builder</title>
+  <style>
+    :root {
+      --bg: #f3f4f6;
+      --surface: #ffffff;
+      --surface-2: #f9fafb;
+      --border: #e5e7eb;
+      --text-1: #111827;
+      --text-2: #6b7280;
+      --muted: #9ca3af;
+      --accent: #1f2937;
+      --danger: #b91c1c;
+      --radius: 10px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      color: var(--text-1);
+      background: var(--bg);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+    .topbar {
+      min-height: 56px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .logo { font-weight: 800; letter-spacing: 0.03em; color: var(--text-1); text-decoration: none; }
+    .logo:hover { opacity: 0.85; }
+    .crumb {
+      color: var(--text-2);
+      font-size: 13px;
+      margin-left: 10px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 500px;
+    }
+    .top-left { display: flex; align-items: center; }
+    .btn {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-1);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn.secondary { background: #4b5563; color: #fff; border-color: #4b5563; }
+    .top-nav {
+      min-height: 50px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .tabs {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      overflow-x: auto;
+      max-width: 100%;
+      white-space: nowrap;
+      scrollbar-width: thin;
+    }
+    .tab {
+      text-decoration: none;
+      color: var(--text-2);
+      font-size: 13px;
+      padding: 14px 4px 12px;
+      border-bottom: 2px solid transparent;
+    }
+    .tab.active { color: var(--text-1); border-bottom-color: var(--accent); font-weight: 600; }
+    .tab.disabled { color: var(--muted); pointer-events: none; }
+    .nav-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .page { padding: 16px; min-width: 0; }
+    .builder-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, 3fr) minmax(0, 5fr);
+      gap: 12px;
+      align-items: start;
+    }
+    aside, main { min-width: 0; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    .card-title { font-weight: 700; font-size: 14px; margin-bottom: 10px; }
+    .cfg-section {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 10px;
+      background: var(--surface-2);
+    }
+    .cfg-label {
+      font-size: 12px;
+      color: var(--text-2);
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .cfg-help { margin-top: 6px; font-size: 11px; color: var(--muted); }
+    input, select, textarea {
+      width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 13px;
+      background: #fff;
+    }
+    textarea { min-height: 74px; resize: vertical; }
+    .meta-grid {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: 1fr;
+    }
+    .inline { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .small { font-size: 12px; color: var(--text-2); }
+    .msg { font-size: 13px; margin-top: 8px; }
+    .err { color: #b91c1c; }
+    .ok { color: #065f46; }
+
+    .q-card {
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      padding: 12px;
+      background: #fafafa;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+    .q-card.active {
+      border-color: #6b7280;
+      box-shadow: inset 0 0 0 1px #6b7280;
+    }
+    .q-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .opt-row {
+      display: grid;
+      grid-template-columns: 86px minmax(0, 1fr) 100px auto;
+      gap: 8px;
+      margin-top: 8px;
+      align-items: center;
+    }
+    .q-image-wrap {
+      width: 220px;
+      height: 130px;
+      border: 1px dashed #cbd5e1;
+      border-radius: 8px;
+      background: #f8fafc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      cursor: pointer;
+    }
+    .question-media-row {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      min-width: 0;
+    }
+    .question-image-col {
+      flex: 0 0 220px;
+      max-width: 100%;
+    }
+    .direction-preview-col {
+      flex: 0 0 320px;
+      max-width: 100%;
+    }
+    .options-inline-col {
+      min-width: 0;
+      flex: 1 1 340px;
+    }
+    .q-image-wrap img,
+    .opt-thumb {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+    .opt-thumb-wrap {
+      width: 84px;
+      height: 56px;
+      border: 1px dashed #cbd5e1;
+      border-radius: 6px;
+      background: #f8fafc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      cursor: pointer;
+    }
+    .img-empty {
+      font-size: 11px;
+      color: var(--muted);
+      text-align: center;
+      padding: 6px;
+    }
+    .q-setting-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .arrow-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .arrow-preview {
+      margin-top: 0;
+      display: flex;
+      justify-content: flex-start;
+    }
+    .sp-preview-wrap {
+      position: relative;
+      width: 100%;
+      max-width: 320px;
+      height: 160px;
+    }
+    .sp-compass {
+      width: 130px;
+      height: 130px;
+      border: 2px solid #d1d5db;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #fff;
+      position: relative;
+      overflow: hidden;
+      left: 0;
+      top: 14px;
+    }
+    .sp-arr {
+      width: 3px;
+      height: 130px;
+      background: linear-gradient(to bottom, #111827 50%, transparent 50%);
+      border-radius: 2px;
+    }
+    .sp-callout {
+      position: absolute;
+      left: 176px;
+      width: 132px;
+    }
+    .sp-callout::before {
+      content: "";
+      position: absolute;
+      left: -34px;
+      top: 50%;
+      width: 30px;
+      height: 1px;
+      background: #94a3b8;
+    }
+    .sp-callout.top {
+      top: 20px;
+    }
+    .sp-callout.center {
+      top: 86px;
+    }
+    .sp-field-label {
+      font-size: 11px;
+      color: var(--text-2);
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+    .sp-field-input {
+      width: 100%;
+      font-size: 12px;
+      padding: 5px 7px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      background: #fff;
+      outline: none;
+    }
+    .sp-field-input:focus {
+      border-color: var(--accent);
+    }
+    .mini {
+      border: 1px solid #d1d5db;
+      background: #fff;
+      border-radius: 6px;
+      font-size: 12px;
+      padding: 6px 8px;
+      cursor: pointer;
+    }
+    .mini.danger { border-color: #fca5a5; background: #fff1f2; color: var(--danger); }
+    .q-tail-actions {
+      margin-top: 10px;
+      display: flex;
+      justify-content: flex-end;
+    }
+    .empty { color: var(--text-2); font-size: 13px; padding: 8px 0; }
+
+    @media (max-width: 1240px) {
+      .top-nav {
+        padding-top: 10px;
+        padding-bottom: 10px;
+        align-items: flex-start;
+      }
+      .tabs {
+        flex: 1 1 100%;
+      }
+      .nav-actions {
+        width: 100%;
+        justify-content: flex-end;
+      }
+      .q-setting-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 1080px) {
+      .builder-grid { grid-template-columns: 1fr; }
+      .question-media-row { flex-direction: column; }
+      .question-image-col,
+      .direction-preview-col,
+      .options-inline-col {
+        flex: 1 1 100%;
+        width: 100%;
+        max-width: 100%;
+      }
+      .opt-row {
+        grid-template-columns: 86px minmax(0, 1fr) 92px auto;
+      }
+      aside .q-setting-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .page { padding: 10px; }
+      .topbar,
+      .top-nav {
+        padding-left: 10px;
+        padding-right: 10px;
+      }
+      .crumb {
+        display: none;
+      }
+      .top-left {
+        min-width: 0;
+      }
+      .nav-actions {
+        justify-content: flex-start;
+      }
+      .btn {
+        padding: 7px 10px;
+      }
+      .q-setting-grid {
+        grid-template-columns: 1fr;
+      }
+      aside .q-setting-grid {
+        grid-template-columns: 1fr !important;
+      }
+      .sp-preview-wrap {
+        min-height: 210px;
+      }
+      .sp-callout {
+        left: 150px;
+        width: calc(100% - 156px);
+      }
+      .sp-callout::before {
+        left: -28px;
+        width: 24px;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .opt-row {
+        grid-template-columns: 72px minmax(0, 1fr);
+        grid-template-areas:
+          "thumb label"
+          "thumb order"
+          "thumb remove";
+        align-items: start;
+      }
+      .opt-row .opt-thumb-wrap { grid-area: thumb; }
+      .opt-row .opt-label {
+        grid-area: label;
+        align-self: center;
+      }
+      .opt-row .opt-order {
+        grid-area: order;
+        width: 100%;
+      }
+      .opt-row .opt-remove {
+        grid-area: remove;
+        justify-self: start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="top-left">
+      <a class="logo" href="admin_home.html">CASE</a>
+      <div class="crumb">Projects / Survey Builder</div>
+    </div>
+    <button class="btn" id="btnLogout">Logout</button>
+  </header>
+
+  <div class="top-nav">
+    <div class="tabs">
+      <a class="tab active" href="admin_surveybuilder.html">Survey</a>
+      <a class="tab disabled nav-extra" data-target="admin_distributions.html" href="#">Distributions</a>
+      <a class="tab disabled nav-extra" data-target="admin_dataanalysis.html" href="#">Data & Analysis</a>
+    </div>
+    <div class="nav-actions">
+      <button class="btn" id="btnAddQuestion">+ Add Question</button>
+      <button class="btn" id="btnInactive">Set Inactive</button>
+      <button class="btn secondary" id="btnPublish">Set Active</button>
+      <button class="btn primary" id="btnSave">Save</button>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="builder-grid">
+      <aside>
+        <div class="card">
+          <div class="card-title">Survey Settings</div>
+          <div class="meta-grid">
+            <div>
+              <div class="cfg-label">Survey Name</div>
+              <input id="surveyName" placeholder="Survey name" />
+            </div>
+            <div>
+              <div class="cfg-label">Status</div>
+              <select id="surveyStatus">
+                <option value="pending">pending</option>
+                <option value="active">active</option>
+                <option value="inactive">inactive</option>
+              </select>
+            </div>
+            <div>
+              <div class="cfg-label">Start Time</div>
+              <input id="startTime" type="datetime-local" />
+            </div>
+            <div>
+              <div class="cfg-label">End Time</div>
+              <input id="endTime" type="datetime-local" />
+            </div>
+            <div class="cfg-section">
+              <div class="cfg-label">Time Limit By Set (seconds, 0 = no limit)</div>
+              <div class="q-setting-grid" style="grid-template-columns: repeat(3, minmax(120px, 1fr));">
+                <div>
+                  <div class="cfg-label">Arrow</div>
+                  <input id="arrowTimeLimitSec" type="number" min="0" step="1" value="0" />
+                </div>
+                <div>
+                  <div class="cfg-label">MCQ</div>
+                  <input id="mcqTimeLimitSec" type="number" min="0" step="1" value="0" />
+                </div>
+                <div>
+                  <div class="cfg-label">Text-entry</div>
+                  <input id="textEntryTimeLimitSec" type="number" min="0" step="1" value="0" />
+                </div>
+              </div>
+            </div>
+
+            <div class="cfg-section">
+              <div class="cfg-label">Student Information Page</div>
+              <div style="margin-bottom:8px;">
+                <div class="cfg-label">Subtitle</div>
+                <input id="participantSubtitle" placeholder="Please enter your information to begin the assessment." />
+              </div>
+
+              <div class="q-setting-grid" style="grid-template-columns: 1fr 1fr;">
+                <div>
+                  <div class="cfg-label">Participant Code Label</div>
+                  <input id="participantCodeLabel" value="Participant Code" />
+                </div>
+                <div>
+                  <div class="cfg-label">Full Name Label</div>
+                  <input id="participantNameLabel" value="Full Name" />
+                </div>
+              </div>
+
+              <div class="q-setting-grid" style="grid-template-columns: 1fr 110px 110px; margin-top:8px;">
+                <div>
+                  <div class="cfg-label">Date of Birth Label</div>
+                  <input id="participantDobLabel" value="Date of Birth" />
+                </div>
+                <div>
+                  <div class="cfg-label">Visible</div>
+                  <select id="participantDobVisible">
+                    <option value="true">true</option>
+                    <option value="false">false</option>
+                  </select>
+                </div>
+                <div>
+                  <div class="cfg-label">Required</div>
+                  <select id="participantDobRequired">
+                    <option value="true">true</option>
+                    <option value="false">false</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="q-setting-grid" style="grid-template-columns: 1fr 110px 110px; margin-top:8px;">
+                <div>
+                  <div class="cfg-label">Grade Label</div>
+                  <input id="participantGradeLabel" value="Grade" />
+                </div>
+                <div>
+                  <div class="cfg-label">Visible</div>
+                  <select id="participantGradeVisible">
+                    <option value="true">true</option>
+                    <option value="false">false</option>
+                  </select>
+                </div>
+                <div>
+                  <div class="cfg-label">Required</div>
+                  <select id="participantGradeRequired">
+                    <option value="true">true</option>
+                    <option value="false">false</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="q-setting-grid" style="grid-template-columns: 1fr 110px 110px; margin-top:8px;">
+                <div>
+                  <div class="cfg-label">School Label</div>
+                  <input id="participantSchoolLabel" value="School" />
+                </div>
+                <div>
+                  <div class="cfg-label">Visible</div>
+                  <select id="participantSchoolVisible">
+                    <option value="true">true</option>
+                    <option value="false">false</option>
+                  </select>
+                </div>
+                <div>
+                  <div class="cfg-label">Required</div>
+                  <select id="participantSchoolRequired">
+                    <option value="true">true</option>
+                    <option value="false">false</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="q-setting-grid" style="grid-template-columns: 1fr 110px; margin-top:8px;">
+                <div>
+                  <div class="cfg-label">School Default Value</div>
+                  <input id="participantSchoolDefault" value="Ambience Partner School" />
+                </div>
+                <div>
+                  <div class="cfg-label">School Readonly</div>
+                  <select id="participantSchoolReadonly">
+                    <option value="true">true</option>
+                    <option value="false">false</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="msg" class="msg"></div>
+        </div>
+
+      </aside>
+
+      <main>
+        <div class="card">
+          <div class="inline" style="justify-content: space-between;">
+            <strong>Questions</strong>
+            <a href="admin_mysurveys.html" class="btn" style="text-decoration:none;">Back to Survey</a>
+          </div>
+          <div id="questions"></div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="/app-config.js?v=2"></script>
+  <script src="/static/js/admin_api.js?v=2"></script>
+  <script>
+    var survey = {
+      id: null,
+      name: "",
+      start_time: null,
+      end_time: null,
+      status: "pending",
+      arrow_time_limit_sec: null,
+      mcq_time_limit_sec: null,
+      text_entry_time_limit_sec: null,
+      participant_form_config: null,
+      questions: [],
+    };
+    var activeQuestionIndex = -1;
+
+    const msgEl = document.getElementById("msg");
+
+    function setMsg(message, isError) {
+      if (!isError) {
+        msgEl.textContent = "";
+        msgEl.className = "msg";
+        return;
+      }
+      msgEl.textContent = message || "";
+      msgEl.className = "msg err";
+    }
+
+    function toLocalInput(dateStr) {
+      if (!dateStr) return "";
+      const d = new Date(dateStr);
+      if (Number.isNaN(d.getTime())) return "";
+      const pad = (n) => String(n).padStart(2, "0");
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    function toIso(localValue) {
+      if (!localValue) return null;
+      const d = new Date(localValue);
+      if (Number.isNaN(d.getTime())) return null;
+      return d.toISOString();
+    }
+
+    function secToInputValue(sec) {
+      const value = Number(sec || 0);
+      if (!Number.isFinite(value) || value <= 0) return "0";
+      return String(Math.round(value));
+    }
+
+    function inputToSec(value) {
+      const num = Number(value);
+      if (!Number.isFinite(num) || num <= 0) return null;
+      return Math.round(num);
+    }
+
+    function getBoolSelect(id) {
+      return document.getElementById(id).value === "true";
+    }
+
+    function setBoolSelect(id, value) {
+      document.getElementById(id).value = value ? "true" : "false";
+    }
+
+    function defaultParticipantFormConfig() {
+      return {
+        subtitle: "Please enter your information to begin the assessment.",
+        code_label: "Participant Code",
+        name_label: "Full Name",
+        school_default: "Ambience Partner School",
+        school_readonly: true,
+        fields: {
+          dob: { label: "Date of Birth", visible: true, required: true },
+          grade: { label: "Grade", visible: true, required: true },
+          school: { label: "School", visible: true, required: true },
+        },
+      };
+    }
+
+    function normalizeParticipantFormConfig(rawConfig) {
+      const defaults = defaultParticipantFormConfig();
+      const fromApi = rawConfig && typeof rawConfig === "object" ? rawConfig : {};
+      const fromFields = fromApi.fields && typeof fromApi.fields === "object" ? fromApi.fields : {};
+
+      return {
+        subtitle: String(fromApi.subtitle || defaults.subtitle),
+        code_label: String(fromApi.code_label || defaults.code_label),
+        name_label: String(fromApi.name_label || defaults.name_label),
+        school_default: String(fromApi.school_default || defaults.school_default),
+        school_readonly: fromApi.school_readonly !== undefined ? !!fromApi.school_readonly : defaults.school_readonly,
+        fields: {
+          dob: {
+            label: String((fromFields.dob && fromFields.dob.label) || defaults.fields.dob.label),
+            visible: fromFields.dob && fromFields.dob.visible !== undefined ? !!fromFields.dob.visible : defaults.fields.dob.visible,
+            required: fromFields.dob && fromFields.dob.required !== undefined ? !!fromFields.dob.required : defaults.fields.dob.required,
+          },
+          grade: {
+            label: String((fromFields.grade && fromFields.grade.label) || defaults.fields.grade.label),
+            visible: fromFields.grade && fromFields.grade.visible !== undefined ? !!fromFields.grade.visible : defaults.fields.grade.visible,
+            required: fromFields.grade && fromFields.grade.required !== undefined ? !!fromFields.grade.required : defaults.fields.grade.required,
+          },
+          school: {
+            label: String((fromFields.school && fromFields.school.label) || defaults.fields.school.label),
+            visible: fromFields.school && fromFields.school.visible !== undefined ? !!fromFields.school.visible : defaults.fields.school.visible,
+            required: fromFields.school && fromFields.school.required !== undefined ? !!fromFields.school.required : defaults.fields.school.required,
+          },
+        },
+      };
+    }
+
+    function readMetaForm() {
+      survey.name = document.getElementById("surveyName").value.trim();
+      survey.status = document.getElementById("surveyStatus").value;
+      survey.start_time = toIso(document.getElementById("startTime").value);
+      survey.end_time = toIso(document.getElementById("endTime").value);
+
+      survey.arrow_time_limit_sec = inputToSec(document.getElementById("arrowTimeLimitSec").value);
+      survey.mcq_time_limit_sec = inputToSec(document.getElementById("mcqTimeLimitSec").value);
+      survey.text_entry_time_limit_sec = inputToSec(document.getElementById("textEntryTimeLimitSec").value);
+
+      survey.participant_form_config = {
+        subtitle: document.getElementById("participantSubtitle").value.trim(),
+        code_label: document.getElementById("participantCodeLabel").value.trim() || "Participant Code",
+        name_label: document.getElementById("participantNameLabel").value.trim() || "Full Name",
+        school_default: document.getElementById("participantSchoolDefault").value.trim(),
+        school_readonly: getBoolSelect("participantSchoolReadonly"),
+        fields: {
+          dob: {
+            label: document.getElementById("participantDobLabel").value.trim() || "Date of Birth",
+            visible: getBoolSelect("participantDobVisible"),
+            required: getBoolSelect("participantDobRequired"),
+          },
+          grade: {
+            label: document.getElementById("participantGradeLabel").value.trim() || "Grade",
+            visible: getBoolSelect("participantGradeVisible"),
+            required: getBoolSelect("participantGradeRequired"),
+          },
+          school: {
+            label: document.getElementById("participantSchoolLabel").value.trim() || "School",
+            visible: getBoolSelect("participantSchoolVisible"),
+            required: getBoolSelect("participantSchoolRequired"),
+          },
+        },
+      };
+    }
+
+    function writeMetaForm() {
+      document.getElementById("surveyName").value = survey.name || "";
+      document.getElementById("surveyStatus").value = survey.status || "pending";
+      document.getElementById("startTime").value = toLocalInput(survey.start_time);
+      document.getElementById("endTime").value = toLocalInput(survey.end_time);
+
+      document.getElementById("arrowTimeLimitSec").value = secToInputValue(survey.arrow_time_limit_sec);
+      document.getElementById("mcqTimeLimitSec").value = secToInputValue(survey.mcq_time_limit_sec);
+      document.getElementById("textEntryTimeLimitSec").value = secToInputValue(survey.text_entry_time_limit_sec);
+
+      const formCfg = normalizeParticipantFormConfig(survey.participant_form_config);
+      survey.participant_form_config = formCfg;
+
+      document.getElementById("participantSubtitle").value = formCfg.subtitle;
+      document.getElementById("participantCodeLabel").value = formCfg.code_label;
+      document.getElementById("participantNameLabel").value = formCfg.name_label;
+      document.getElementById("participantDobLabel").value = formCfg.fields.dob.label;
+      setBoolSelect("participantDobVisible", formCfg.fields.dob.visible);
+      setBoolSelect("participantDobRequired", formCfg.fields.dob.required);
+      document.getElementById("participantGradeLabel").value = formCfg.fields.grade.label;
+      setBoolSelect("participantGradeVisible", formCfg.fields.grade.visible);
+      setBoolSelect("participantGradeRequired", formCfg.fields.grade.required);
+      document.getElementById("participantSchoolLabel").value = formCfg.fields.school.label;
+      setBoolSelect("participantSchoolVisible", formCfg.fields.school.visible);
+      setBoolSelect("participantSchoolRequired", formCfg.fields.school.required);
+      document.getElementById("participantSchoolDefault").value = formCfg.school_default;
+      setBoolSelect("participantSchoolReadonly", formCfg.school_readonly);
+
+    }
+
+    function newQuestion() {
+      return {
+        id: null,
+        type: "mcq",
+        title: "",
+        question_image: "",
+        is_visible: false,
+        is_required: false,
+        allow_multiple_selection: false,
+        order_index: survey.questions.length + 1,
+        options: [
+          { id: null, image_url: "", order_index: 1 },
+          { id: null, image_url: "", order_index: 2 },
+        ],
+        config: {
+          id: null,
+          correct_angle: 0,
+          tolerance: 5,
+          standing_position: "",
+          looking_direction: "",
+        },
+      };
+    }
+
+    function ensureArrowConfig(question) {
+      if (!question.config) {
+        question.config = {
+          id: null,
+          correct_angle: 0,
+          tolerance: 5,
+          standing_position: "",
+          looking_direction: "",
+        };
+      }
+    }
+
+    function normalizeQuestion(question) {
+      const q = { ...(question || {}) };
+      q.options = Array.isArray(q.options) ? q.options : [];
+      q.is_required = !!q.is_required;
+      q.allow_multiple_selection = !!q.allow_multiple_selection;
+      q.config = q.config || {
+        id: null,
+        correct_angle: 0,
+        tolerance: 5,
+        standing_position: "",
+        looking_direction: "",
+      };
+      return q;
+    }
+
+    function updateBuilderTabs(hasSurveyId, surveyId) {
+      document.querySelectorAll(".nav-extra").forEach((el) => {
+        el.style.display = hasSurveyId ? "inline-block" : "none";
+        const target = el.getAttribute("data-target");
+        if (hasSurveyId && target && surveyId) {
+          el.classList.remove("disabled");
+          el.href = `${target}?id=${encodeURIComponent(surveyId)}`;
+        } else {
+          el.classList.add("disabled");
+          el.href = "#";
+        }
+      });
+    }
+
+    function addOption(evt, qIndex) {
+      if (evt && typeof evt.stopPropagation === "function") evt.stopPropagation();
+      const q = survey.questions[qIndex];
+      q.options = q.options || [];
+      q.options.push({ id: null, image_url: "", order_index: q.options.length + 1 });
+      renderQuestions();
+    }
+
+    function addQuestion(evt) {
+      if (evt && typeof evt.stopPropagation === "function") evt.stopPropagation();
+      survey.questions.push(newQuestion());
+      survey.questions.forEach((q, i) => q.order_index = i + 1);
+      activeQuestionIndex = survey.questions.length - 1;
+      renderQuestions();
+    }
+
+    function removeOption(evt, qIndex, optIndex) {
+      if (evt && typeof evt.stopPropagation === "function") evt.stopPropagation();
+      const q = survey.questions[qIndex];
+      q.options.splice(optIndex, 1);
+      q.options.forEach((opt, idx) => opt.order_index = idx + 1);
+      renderQuestions();
+    }
+
+    function removeQuestion(evt, index) {
+      if (evt && typeof evt.stopPropagation === "function") evt.stopPropagation();
+      survey.questions.splice(index, 1);
+      survey.questions.forEach((q, idx) => q.order_index = idx + 1);
+      if (survey.questions.length === 0) activeQuestionIndex = -1;
+      else if (activeQuestionIndex >= survey.questions.length) activeQuestionIndex = survey.questions.length - 1;
+      renderQuestions();
+    }
+
+    function pickImageFile() {
+      return new Promise((resolve) => {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = "image/*";
+        input.style.display = "none";
+        document.body.appendChild(input);
+        input.onchange = () => {
+          const file = input.files && input.files[0] ? input.files[0] : null;
+          input.remove();
+          resolve(file);
+        };
+        input.oncancel = () => {
+          input.remove();
+          resolve(null);
+        };
+        input.click();
+      });
+    }
+
+    async function uploadQuestionImage(evt, qIndex) {
+      if (evt && typeof evt.stopPropagation === "function") evt.stopPropagation();
+      try {
+        const file = await pickImageFile();
+        if (!file) return;
+        setMsg("Uploading option image...", false);
+        const result = await AdminApi.uploadImage(file, "surveys/questions");
+        survey.questions[qIndex].question_image = result.url;
+        renderQuestions();
+        setMsg("Option image uploaded successfully", false);
+      } catch (e) {
+        setMsg(e.message || "Failed to upload the option image", true);
+      }
+    }
+
+    async function uploadOptionImage(evt, qIndex, optIndex) {
+      if (evt && typeof evt.stopPropagation === "function") evt.stopPropagation();
+      try {
+        const file = await pickImageFile();
+        if (!file) return;
+        setMsg("Uploading option image...", false);
+        const result = await AdminApi.uploadImage(file, "surveys/options");
+        survey.questions[qIndex].options[optIndex].image_url = result.url;
+        renderQuestions();
+        setMsg("Option image uploaded successfully", false);
+      } catch (e) {
+        setMsg(e.message || "Failed to upload the option image", true);
+      }
+    }
+
+    function validateBeforeSave(forceStatus) {
+      const errors = [];
+      const mode = forceStatus || survey.status || "pending";
+
+      const timerFields = [
+        ["arrow_time_limit_sec", survey.arrow_time_limit_sec],
+        ["mcq_time_limit_sec", survey.mcq_time_limit_sec],
+        ["text_entry_time_limit_sec", survey.text_entry_time_limit_sec],
+      ];
+      timerFields.forEach(([fieldName, fieldValue]) => {
+        if (fieldValue !== null && (!Number.isFinite(Number(fieldValue)) || Number(fieldValue) < 0)) {
+          errors.push(`${fieldName} must be >= 0.`);
+        }
+      });
+
+      if (!survey.name || !survey.name.trim()) {
+        errors.push("Survey name is required.");
+      }
+
+      if (survey.start_time && survey.end_time) {
+        const start = new Date(survey.start_time).getTime();
+        const end = new Date(survey.end_time).getTime();
+        if (Number.isFinite(start) && Number.isFinite(end) && end <= start) {
+          errors.push("end_time must be greater than start_time.");
+        }
+      }
+
+      survey.questions.forEach((q, idx) => {
+        const qNo = idx + 1;
+        if (!["mcq", "arrow", "text_entry"].includes(q.type)) {
+          errors.push(`Question ${qNo}: unsupported type ${q.type}.`);
+        }
+
+        const orderOk = Number.isInteger(Number(q.order_index)) && Number(q.order_index) > 0;
+        if (!orderOk) {
+          errors.push(`Question ${qNo}: order_index must be a positive integer.`);
+        }
+
+        if (q.type === "mcq") {
+          const options = Array.isArray(q.options) ? q.options : [];
+          const filledOptions = options.filter((o) => (o.image_url || "").trim().length > 0);
+          if (filledOptions.length < 1) {
+            errors.push(`Question ${qNo} (mcq): must have at least 1 option with image_url.`);
+          }
+          filledOptions.forEach((o, oi) => {
+            const oiValue = Number(o.order_index);
+            if (!Number.isInteger(oiValue) || oiValue <= 0) {
+              errors.push(`Question ${qNo} option ${oi + 1}: order_index must be a positive integer.`);
+            }
+          });
+        }
+
+        if (q.type === "arrow") {
+          if (!q.config) {
+            errors.push(`Question ${qNo} (arrow): config is required.`);
+          } else {
+            const correctAngle = Number(q.config.correct_angle);
+            const tolerance = Number(q.config.tolerance);
+            if (!Number.isFinite(correctAngle) || correctAngle < 0 || correctAngle > 360) {
+              errors.push(`Question ${qNo} (arrow): correct_angle must be in [0, 360].`);
+            }
+            if (!Number.isFinite(tolerance) || tolerance < 0) {
+              errors.push(`Question ${qNo} (arrow): tolerance must be >= 0.`);
+            }
+          }
+        }
+
+        if (q.type === "text_entry") {
+          // No extra config required for text-entry.
+        }
+      });
+
+      if (mode === "active" && survey.questions.length < 1) {
+        errors.push("Cannot publish active survey without questions.");
+      }
+
+      return errors;
+    }
+
+    function renderQuestions() {
+      const root = document.getElementById("questions");
+      if (!survey.questions.length) {
+        root.innerHTML = `<div class="empty">Add questions</div>`;
+        return;
+      }
+
+      root.innerHTML = survey.questions.map((q, i) => {
+        const activeClass = i === activeQuestionIndex ? "active" : "";
+        const questionImg = (q.question_image || "").trim();
+        const optionsHtml = (q.options || []).map((opt, oi) => `
+          <div class="opt-row">
+            <div class="opt-thumb-wrap" onclick="uploadOptionImage(event, ${i}, ${oi})" title="Click to choose image">
+              ${(opt.image_url || "").trim() ? `<img class="opt-thumb" src="${(opt.image_url || "").replace(/"/g, "&quot;")}" alt="option image" />` : `<div class="img-empty">...</div>`}
+            </div>
+            <div class="small opt-label">Option ${oi + 1}</div>
+            <input class="opt-order" type="number" min="1" value="${opt.order_index || oi + 1}" oninput="survey.questions[${i}].options[${oi}].order_index=parseInt(this.value, 10)" />
+            <button class="mini danger opt-remove" onclick="removeOption(event, ${i}, ${oi})">Remove</button>
+          </div>
+        `).join("");
+
+        return `
+          <div class="q-card ${activeClass}" onclick="setActiveQuestion(event, ${i})">
+            <div class="q-head">
+              <strong>Question ${i + 1}</strong>
+              <button class="mini danger" onclick="removeQuestion(event, ${i})">Delete</button>
+            </div>
+
+            <div style="margin-bottom:8px;">
+          <div style="margin-bottom:8px;">
+            <div class="cfg-label">Title</div>
+               <input
+                type="text"
+                value="${q.title || ""}"
+                oninput="survey.questions[${i}].title=this.value"
+                placeholder="Enter question title" />
+            </div>
+
+            <div class="question-media-row">
+              <div class="question-image-col">
+                <div class="cfg-label">Question Image</div>
+                <div class="q-image-wrap" onclick="uploadQuestionImage(event, ${i})" title="Click to choose image">
+                  ${questionImg ? `<img src="${questionImg.replace(/"/g, "&quot;")}" alt="question image" />` : `<div class="img-empty">...</div>`}
+                </div>
+                <div class="small" style="margin-top:6px;">Click image to choose</div>
+              </div>
+              ${q.type === "mcq" ? `
+                <div class="options-inline-col">
+                  <div class="inline" style="justify-content: space-between; margin-bottom: 6px;">
+                    <div class="cfg-label" style="margin-bottom:0;">Options</div>
+                    <button class="mini" onclick="addOption(event, ${i})">Add Option</button>
+                  </div>
+                  ${optionsHtml || "<div class='empty'>No options.</div>"}
+                </div>
+              ` : ""}
+              ${q.type === "arrow" ? `
+                <div>
+                  <div class="cfg-label">Direction Preview</div>
+                  <div class="arrow-preview direction-preview-col">
+                    <div class="sp-preview-wrap">
+                      <div class="sp-compass">
+                        <div class="sp-arr"></div>
+                      </div>
+                      <div class="sp-callout top">
+                        <div class="sp-field-label">Standing position</div>
+                        <input
+                          class="sp-field-input"
+                          type="text"
+                          value="${(q.config?.standing_position || "").replace(/"/g, "&quot;")}"
+                          oninput="survey.questions[${i}].config.standing_position=this.value"
+                        />
+                      </div>
+                      <div class="sp-callout center">
+                        <div class="sp-field-label">Looking direction</div>
+                        <input
+                          class="sp-field-input"
+                          type="text"
+                          value="${(q.config?.looking_direction || "").replace(/"/g, "&quot;")}"
+                          oninput="survey.questions[${i}].config.looking_direction=this.value"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ` : ""}
+            </div>
+
+            <div style="margin-top:8px;">
+              <div class="q-setting-grid">
+                <div>
+                  <div class="cfg-label">Type</div>
+                  <select onchange="survey.questions[${i}].type=this.value; if(this.value==='arrow'){ensureArrowConfig(survey.questions[${i}]);} if(this.value!=='mcq'){survey.questions[${i}].allow_multiple_selection=false;} renderQuestions();">
+                    <option value="mcq" ${q.type === "mcq" ? "selected" : ""}>mcq</option>
+                    <option value="arrow" ${q.type === "arrow" ? "selected" : ""}>arrow</option>
+                    <option value="text_entry" ${q.type === "text_entry" ? "selected" : ""}>text_entry</option>
+                  </select>
+                </div>
+                <div>
+                  <div class="cfg-label">Visible</div>
+                  <select onchange="survey.questions[${i}].is_visible=this.value==='true'; renderQuestions();">
+                    <option value="false" ${q.is_visible ? "" : "selected"}>false</option>
+                    <option value="true" ${q.is_visible ? "selected" : ""}>true</option>
+                  </select>
+                </div>
+                <div>
+                  <div class="cfg-label">Required</div>
+                  <select onchange="survey.questions[${i}].is_required=this.value==='true'; renderQuestions();">
+                    <option value="false" ${q.is_required ? "" : "selected"}>false</option>
+                    <option value="true" ${q.is_required ? "selected" : ""}>true</option>
+                  </select>
+                </div>
+                <div>
+                  <div class="cfg-label">Order Index</div>
+                  <input type="number" min="1" value="${q.order_index || i + 1}" oninput="survey.questions[${i}].order_index=parseInt(this.value, 10)" />
+                </div>
+              </div>
+
+              ${q.type === "mcq" ? `
+                <div style="margin-top:8px; max-width: 280px;">
+                  <div class="cfg-label">allow_multiple_selection</div>
+                  <select onchange="survey.questions[${i}].allow_multiple_selection=this.value==='true'; renderQuestions();">
+                    <option value="false" ${q.allow_multiple_selection ? "" : "selected"}>false</option>
+                    <option value="true" ${q.allow_multiple_selection ? "selected" : ""}>true</option>
+                  </select>
+                </div>
+              ` : ""}
+
+              ${q.type === "arrow" ? `
+                <div class="arrow-grid">
+                  <div>
+                    <div class="cfg-label">correct_angle</div>
+                    <input type="number" value="${q.config?.correct_angle ?? 0}" oninput="survey.questions[${i}].config.correct_angle=parseFloat(this.value)" />
+                  </div>
+                  <div>
+                    <div class="cfg-label">tolerance</div>
+                    <input type="number" value="${q.config?.tolerance ?? 5}" oninput="survey.questions[${i}].config.tolerance=parseFloat(this.value)" />
+                  </div>
+                </div>
+              ` : ""}
+
+              ${i === survey.questions.length - 1 ? `
+                <div class="q-tail-actions">
+                  <button class="mini" onclick="addQuestion(event)">+ Add Question</button>
+                </div>
+              ` : ""}
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function buildPayload(forceStatus) {
+      readMetaForm();
+      const errors = validateBeforeSave(forceStatus);
+      if (errors.length) {
+        throw new Error(errors.join(" "));
+      }
+
+      const status = forceStatus || survey.status || "pending";
+      const questions = survey.questions.map((q, index) => {
+        const base = {
+          id: q.id || null,
+          type: q.type,
+          title: q.title || "",
+          question_image: q.question_image || null,
+          is_visible: !!q.is_visible,
+          is_required: !!q.is_required,
+          allow_multiple_selection: q.type === "mcq" ? !!q.allow_multiple_selection : false,
+          order_index: Number(q.order_index || index + 1),
+          options: null,
+          config: null,
+        };
+
+        if (q.type === "mcq") {
+          const opts = (q.options || [])
+            .filter((o) => (o.image_url || "").trim().length > 0)
+            .map((o, oi) => ({
+              id: o.id || null,
+              image_url: o.image_url.trim(),
+              order_index: Number(o.order_index || oi + 1),
+            }));
+          base.options = opts;
+        }
+
+        if (q.type === "arrow") {
+          base.config = {
+            id: q.config?.id || null,
+            correct_angle: Number(q.config?.correct_angle || 0),
+            tolerance: Number(q.config?.tolerance || 0),
+            standing_position: q.config?.standing_position || null,
+            looking_direction: q.config?.looking_direction || null,
+          };
+        }
+
+        return base;
+      });
+
+      return {
+        id: survey.id || null,
+        name: survey.name,
+        start_time: survey.start_time,
+        end_time: survey.end_time,
+        status,
+        arrow_time_limit_sec: survey.arrow_time_limit_sec,
+        mcq_time_limit_sec: survey.mcq_time_limit_sec,
+        text_entry_time_limit_sec: survey.text_entry_time_limit_sec,
+        participant_form_config: survey.participant_form_config,
+        questions,
+      };
+    }
+
+    async function save(forceStatus, options) {
+      const cfg = options || {};
+      setMsg("", false);
+      try {
+        const payload = buildPayload(forceStatus);
+        const isUpdate = !!payload.id;
+        const result = await AdminApi.upsertSurvey(payload);
+        survey = {
+          ...result,
+          questions: (result.questions || []).map((q) => normalizeQuestion(q)),
+        };
+
+        if (activeQuestionIndex < 0 && survey.questions.length > 0) activeQuestionIndex = 0;
+        writeMetaForm();
+        renderQuestions();
+        setMsg(`Saved: ${result.name} (${result.status})`, false);
+
+        if (!new URLSearchParams(window.location.search).get("id")) {
+          window.history.replaceState({}, "", `admin_surveybuilder.html?id=${survey.id}`);
+        }
+        updateBuilderTabs(true, survey.id);
+
+        if (cfg.redirectHomeOnSuccess) {
+          alert(isUpdate ? "Survey updated successfully" : "Survey created successfully");
+          window.location.href = "admin_home.html";
+          return;
+        }
+      } catch (e) {
+        setMsg(e.message || "Save failed", true);
+      }
+    }
+
+    async function loadById(id) {
+      const data = await AdminApi.getSurvey(id);
+      survey = {
+        ...data,
+        questions: (data.questions || []).map((q) => normalizeQuestion(q)),
+      };
+      activeQuestionIndex = survey.questions.length ? 0 : -1;
+      updateBuilderTabs(true, survey.id);
+      writeMetaForm();
+      renderQuestions();
+    }
+
+    async function init() {
+      const me = await AdminApi.ensureAuthenticated({ requireAdmin: true });
+      if (!me) return;
+
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get("id");
+      updateBuilderTabs(!!id, id);
+      if (id) {
+        try {
+          await loadById(id);
+        } catch (e) {
+          setMsg(e.message || "Cannot load survey", true);
+        }
+      } else {
+        survey.questions = [newQuestion()];
+        activeQuestionIndex = 0;
+        writeMetaForm();
+        renderQuestions();
+      }
+    }
+
+    document.getElementById("btnAddQuestion").addEventListener("click", addQuestion);
+    document.getElementById("btnSave").addEventListener("click", () => save(null, { redirectHomeOnSuccess: true }));
+    document.getElementById("btnPublish").addEventListener("click", () => save("active"));
+    document.getElementById("btnInactive").addEventListener("click", () => save("inactive"));
+    document.getElementById("btnLogout").addEventListener("click", () => AdminApi.logout());
+
+    window.setActiveQuestion = function(evt, index) {
+      const target = evt && evt.target;
+      if (target && target.closest("input, textarea, select, button, a, .q-image-wrap, .opt-thumb-wrap")) {
+        return;
+      }
+      if (activeQuestionIndex === index) {
+        return;
+      }
+      activeQuestionIndex = index;
+      renderQuestions();
+    };
+    window.addOption = addOption;
+    window.addQuestion = addQuestion;
+    window.removeOption = removeOption;
+    window.removeQuestion = removeQuestion;
+    window.uploadQuestionImage = uploadQuestionImage;
+    window.uploadOptionImage = uploadOptionImage;
+
+    init();
+  </script>
+</body>
+</html>
