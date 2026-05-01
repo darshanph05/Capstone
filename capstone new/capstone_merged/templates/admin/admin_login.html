@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Login</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f4f5f7;
+      color: #111827;
+    }
+    .wrap {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .card {
+      width: 100%;
+      max-width: 420px;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+    }
+    h1 {
+      margin: 0 0 4px;
+      font-size: 22px;
+    }
+    p {
+      margin: 0 0 16px;
+      color: #6b7280;
+      font-size: 14px;
+    }
+    label {
+      display: block;
+      margin: 10px 0 6px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    input {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 14px;
+    }
+    .row {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    button {
+      border: none;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .primary {
+      background: #2563eb;
+      color: #fff;
+      flex: 1;
+    }
+    .msg {
+      margin-top: 12px;
+      font-size: 13px;
+    }
+    .err { color: #b91c1c; }
+    .ok { color: #065f46; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Login</h1>
+
+      <label for="email">Email</label>
+      <input id="email" type="email" placeholder="admin@example.com" />
+
+      <label for="password">Password</label>
+      <input id="password" type="password" placeholder="********" />
+
+      <div class="row">
+        <button class="primary" id="btnLogin">Login</button>
+      </div>
+
+      <div id="msg" class="msg"></div>
+    </div>
+  </div>
+
+  <script src="/app-config.js?v=2"></script>
+  <script src="/static/js/admin_api.js?v=2"></script>
+  <script>
+    const appConfig = window.APP_CONFIG || {};
+    const msgEl = document.getElementById("msg");
+    const emailEl = document.getElementById("email");
+    const passwordEl = document.getElementById("password");
+
+    function setMsg(message, isError) {
+      msgEl.textContent = message || "";
+      msgEl.className = `msg ${isError ? "err" : "ok"}`;
+    }
+
+    function isAllowedRole(roleCode) {
+      if (typeof AdminApi.isAllowedAdminRole === "function") {
+        return AdminApi.isAllowedAdminRole(roleCode);
+      }
+      const allowed = Array.isArray(appConfig.adminAllowedRoles) && appConfig.adminAllowedRoles.length
+        ? appConfig.adminAllowedRoles.map((r) => String(r).toUpperCase())
+        : ["ADMIN"];
+      return allowed.includes(String(roleCode || "").toUpperCase());
+    }
+
+    document.getElementById("btnLogin").addEventListener("click", async () => {
+      setMsg("", false);
+      try {
+        const username = emailEl.value.trim();
+        const password = passwordEl.value;
+        if (!username || !password) {
+          setMsg("Login with your username & password", true);
+          return;
+        }
+
+        const tokenData = await AdminApi.login(username, password);
+        AdminApi.setToken(tokenData.access_token);
+
+        const me = await AdminApi.getMe();
+        AdminApi.setUser(me);
+        if (!isAllowedRole(me?.role?.code)) {
+          AdminApi.clearSession();
+          setMsg("The account does not belong to an authorized role group.", true);
+          return;
+        }
+
+        window.location.href = "admin_home.html";
+      } catch (e) {
+        setMsg(e.message || "Login failed", true);
+      }
+    });
+
+    const url = new URL(window.location.href);
+    const err = url.searchParams.get("error");
+    if (err) setMsg(err, true);
+  </script>
+</body>
+</html>
