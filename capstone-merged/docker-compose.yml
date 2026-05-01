@@ -1,0 +1,13 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: capstone-fe
+    env_file:
+      - .env
+    environment:
+      PORT: 8001
+    ports:
+      - "8001:8001"
+    restart: unless-stopped

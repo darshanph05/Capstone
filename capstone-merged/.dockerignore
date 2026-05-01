@@ -1,0 +1,12 @@
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.git/
+.vscode/
+.pytest_cache/
+.mypy_cache/
+uv_out.log
+uv_err.log
